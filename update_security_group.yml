@@ -19,4 +19,58 @@
       register: vpc_facts
       changed_when: false
 
-    - debug:
+
+
+    - name: Get security group
+      command: "aws ec2 describe-security-groups
+                --filters Name=vpc-id,Values={{ vpc_facts.stdout }}
+                          Name=group-name,Values={{ aws_prefix ~ '_sg_vpn' }}
+                --query 'SecurityGroups[0]'
+                --output json
+                " 
+      register: sg_facts
+      changed_when: false
+
+
+    - name: Get security group ingress rule
+      command: "aws ec2 describe-security-groups
+                --filters Name=vpc-id,Values={{ vpc_facts.stdout }}
+                          Name=group-name,Values={{ aws_prefix ~ '_sg_vpn' }}
+                          Name=ip-permission.from-port,Values=22
+                          Name=ip-permission.to-port,Values=22
+
+                --query 'SecurityGroups[0].IpPermissions'
+                --output json
+                " 
+      register: sg_rule_facts
+      changed_when: false
+
+
+    - name: Revoke any previous ingress rules
+      command: "aws ec2 revoke-security-group-ingress
+                --group-id {{ (sg_facts.stdout|from_json).GroupId }}
+                --protocol {{ item.IpProtocol }}
+                --port {{ item.FromPort }}
+                --cidr {{ item.IpRanges[0].CidrIp }}
+                --query 'SecurityGroups[0]'
+                --output json
+                " 
+      changed_when: false
+      when: sg_rule_facts.stdout|from_json is defined and item.FromPort==22
+      with_items: "{{ sg_rule_facts.stdout|from_json }}"
+
+
+
+
+    - name: Authorise ingress rules
+      command: "aws ec2 authorize-security-group-ingress
+                --group-id {{ (sg_facts.stdout|from_json).GroupId }}
+                --protocol tcp
+                --port 22
+                --cidr {{ host_public_ip }}/32
+                " 
+      register: sg_facts
+      changed_when: false
+
+
+
