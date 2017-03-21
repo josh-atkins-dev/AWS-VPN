@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  serial: 1
+  gather_facts: yes
+  gather_subset: '!all'
+  tasks:
+    - set_fact:
+        aws_prefix: "{{ lookup('env','AWS_PREFIX') }}"
+        vpc_cidr: "{{ lookup('env','VPC_CIDR') }}"
+        host_public_ip: "{{ lookup('env','PUBLIC_IP') }}"
+
+
+    - name: Get VPC ID
+      command: "aws ec2 describe-vpcs
+                --filters Name=cidr,Values={{ vpc_cidr }}
+                --query 'Vpcs[0].VpcId'
+                --output text
+                " 
+      register: vpc_facts
+      changed_when: false
+
+    - debug:
