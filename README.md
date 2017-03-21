@@ -5,3 +5,10 @@
 The following are present:
 
 - ansible
+
+
+## Getting Started
+
+```
+> ./install.sh
+```
