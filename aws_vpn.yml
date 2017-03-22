@@ -8,6 +8,7 @@
         url: http://ipecho.net/plain
         return_content: yes
       register: ip_facts
+      tags: always
   roles:
     - {role: angstwad.docker_ubuntu, become: true, tags: docker}
   post_tasks:
@@ -15,7 +16,8 @@
       become: true
       docker_image:
         name: kylemanna/openvpn
-    - name: start VPN container
+        
+    - name: generate container config
       become: true
       docker_container:
         image: kylemanna/openvpn
@@ -25,12 +27,38 @@
         volumes:
           - openvpn_data:/etc/openvpn
         command: "ovpn_genconfig -u udp://{{ ip_facts.content }}"
+    - block:
 
-# docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://35.157.151.5
-# docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki pass
-# docker run -v openvpn_data:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn
+        - pause:
+            prompt: "Pause until ovpn_initpki has been run manually. \nSSH to instance at {{ ip_facts.content }} and run:\ndocker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki "
+        - name: ovpn_initpki
+          become: true
+          docker_container:
+            image: kylemanna/openvpn
+            name: openvpn
+            env:
+              OVPN_DATA: openvpn_data
+            volumes:
+              - openvpn_data:/etc/openvpn
+            command: "ovpn_initpki nopass"
+      tags: pki
 
-# docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full mbp nopass
-# docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient mbp > mbp.ovpn
 
-scp -i /vagrant/tmp/ssh/170320-key.pem ubuntu@35.157.151.5:/home/ubuntu/mbp.ovpn /vagrant/tmp/mbp.ovpn
+    - name: run container
+      become: true
+      docker_container:
+        image: kylemanna/openvpn
+        name: openvpn
+        env:
+          OVPN_DATA: openvpn_data
+        volumes:
+          - openvpn_data:/etc/openvpn
+        published_ports: 
+          - 1194:1194
+        capabilities:
+          - NET_ADMIN
+      tags: run
+
+
+
+# docker run -v $OVPN_DATA:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn
