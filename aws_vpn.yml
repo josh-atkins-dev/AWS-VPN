@@ -24,8 +24,10 @@
 
   roles:
     - {role: angstwad.docker_ubuntu, become: true, tags: docker}
+
   post_tasks:
     - set_fact:
+        tags: always
         env_vars: 
           OVPN_DATA: "{{ OVPN_DATA }}"
         vols:
@@ -33,12 +35,14 @@
 
     - name: pull kylemanna/openvpn
       become: true
+      tags: pull
       docker_image:
         name: kylemanna/openvpn
 
 
     - name: Generate openvpn config
       become: true
+      tags: generate
       docker_container:
         name: openvpn
         image: kylemanna/openvpn
