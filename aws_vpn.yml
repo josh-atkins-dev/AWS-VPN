@@ -7,16 +7,41 @@
     OVPN_DATA: "ovpn-data"
 
   pre_tasks:
-    - name: Get VPC public IP
-      uri:
-        url: http://ipecho.net/plain
-        return_content: yes
-      register: ip_facts
-      tags: always
+    - block:
+      - name: Get VPC public IP
+        uri:
+          url: http://ipecho.net/plain
+          return_content: yes
+        register: ip_facts
+        tags: always
+      - set_fact:
+          public_ip: "{{ ip_facts.content }}"
+      when: PUBLIC_IP is undefined
+
+    - set_fact:
+        public_ip: "{{ PUBLIC_IP }}"
+      when: PUBLIC_IP is defined
+
   roles:
     - {role: angstwad.docker_ubuntu, become: true, tags: docker}
   post_tasks:
+    - set_fact:
+        env_vars: 
+          OVPN_DATA: "{{ OVPN_DATA }}"
+        vols:
+          - "{{ OVPN_DATA }}:/etc/openvpn"
+
     - name: pull kylemanna/openvpn
       become: true
       docker_image:
         name: kylemanna/openvpn
+
+
+    - name: Generate openvpn config
+      become: true
+      docker_container:
+        name: openvpn
+        image: kylemanna/openvpn
+        env: "{{ env_vars }}"
+        volumes: "{{ vols }}"
+        command: "ovpn_genconfig -u udp://{{ public_ip }}"
