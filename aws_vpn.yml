@@ -9,9 +9,10 @@
   pre_tasks:
     - block:
         - set_fact:
+            OVPN_DIR: "/home/ubuntu/ovpn-data0"
             OVPN_DATA: "ovpn-data0"
         - file:
-            path: "/home/ubuntu/{{ OVPN_DATA }}"
+            path: "{{ OVPN_DIR }}"
             state: directory
             mode: 0755
 
@@ -46,6 +47,11 @@
         docker_ports:
           - 1194:1194/udp
         docker_caps: NET_ADMIN
+
+    - set_fact:
+        vols:
+          - "{{ OVPN_DIR }}:/etc/openvpn"
+      when: ALTERNATIVE is defined
 
     - name: pull kylemanna/openvpn
       become: true
