@@ -17,7 +17,6 @@
             mode: 0755
 
       when: ALTERNATIVE is defined
-    - fail:
 
     - block:
       - name: Get VPC public IP
