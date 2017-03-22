@@ -8,6 +8,17 @@
 
   pre_tasks:
     - block:
+        - set_fact:
+            OVPN_DATA: "ovpn-data0"
+        - file:
+            path: "/home/ubuntu/{{ OVPN_DATA }}"
+            state: directory
+            mode: 0755
+
+      when: ALTERNATIVE is defined
+    - fail:
+
+    - block:
       - name: Get VPC public IP
         uri:
           url: http://ipecho.net/plain
