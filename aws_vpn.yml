@@ -56,6 +56,8 @@
           - "{{ OVPN_DIR }}:/etc/openvpn"
         docker_name: openvpn0
         client_name: mbp2
+        docker_ports:
+          - 1195:1194/udp
       when: ALTERNATIVE is defined
 
     - name: pull kylemanna/openvpn
