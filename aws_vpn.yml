@@ -47,10 +47,15 @@
         docker_ports:
           - 1194:1194/udp
         docker_caps: NET_ADMIN
+        server_target: "{{ public_ip }}"
+        docker_name: openvpn
+        client_name: mbp1
 
     - set_fact:
         vols:
           - "{{ OVPN_DIR }}:/etc/openvpn"
+        docker_name: openvpn0
+        client_name: mbp2
       when: ALTERNATIVE is defined
 
     - name: pull kylemanna/openvpn
@@ -59,16 +64,20 @@
       docker_image:
         name: kylemanna/openvpn
 
+    - set_fact:
+        server_target: "{{ public_ip }}:1195"
+      when: ALTERNATIVE is defined
+
 
     - name: Generate openvpn config
       become: true
       tags: generate
       docker_container:
-        name: openvpn
+        name: "{{ docker_name }}"
         image: kylemanna/openvpn
         env: "{{ env_vars }}"
         volumes: "{{ vols }}"
-        command: "ovpn_genconfig -u udp://{{ public_ip }}"
+        command: "ovpn_genconfig -u udp://{{ server_target }}"
 
 
     - pause:
@@ -77,10 +86,18 @@
 ssh -v -i {{ lookup('env','VM_TEMP_PATH') }}/ssh/{{ lookup('env','AWS_PREFIX') }}-key.pem ubuntu@{{ public_ip }}\n
 \n
 #   and generate certificates using ovpn_initpki, e.g.:\n
-sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki\n
+sudo docker run -v {{ vols[0] }} --rm -it kylemanna/openvpn ovpn_initpki\n
 \n
 #   Press enter to continue
         "
+
+    - copy:
+        src: openvpn.conf
+        dest: "{{ OVPN_DIR }}"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0644
+      when: ALTERNATIVE is defined
 
 
 
@@ -88,14 +105,14 @@ sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_
       - name: Remove previous openvpn container
         become: true
         docker_container:
-          name: openvpn
+          name: "{{ docker_name }}"
           image: kylemanna/openvpn
           state: absent
 
       - name: Start openvpn
         become: true
         docker_container:
-          name: openvpn
+          name: "{{ docker_name }}"
           image: kylemanna/openvpn
           env: "{{ env_vars }}"
           volumes: "{{ vols }}"
@@ -110,10 +127,10 @@ sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_
 ssh -v -i {{ lookup('env','VM_TEMP_PATH') }}/ssh/{{ lookup('env','AWS_PREFIX') }}-key.pem ubuntu@{{ public_ip }}\n
 \n
 #   generate client certificates using ovpn_initpki, e.g.:\n
-sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full mbp1 nopass\n
+sudo docker run -v {{ vols[0] }} --rm -it kylemanna/openvpn easyrsa build-client-full {{ client_name }} nopass\n
 \n
 #   retrieve ovpn file:\n
-sudo docker run -v ovpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient mbp1 > /home/ubuntu/mbp1.ovpn
+sudo docker run -v {{ vols[0] }} --rm kylemanna/openvpn ovpn_getclient {{ client_name }} > /home/ubuntu/{{ client_name }}.ovpn
 
 \n
 #   Press enter to continue
@@ -123,7 +140,7 @@ sudo docker run -v ovpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient 
       fetch:
         tags: fetch
         flat: yes
-        src: /home/ubuntu/mbp1.ovpn
+        src: "/home/ubuntu/{{ client_name }}.ovpn"
         dest: "{{ lookup('env','VM_TEMP_PATH') }}/"
 
 
