@@ -17,6 +17,7 @@
             mode: 0755
 
       when: ALTERNATIVE is defined
+      tags: always
 
     - block:
       - name: Get VPC public IP
@@ -32,13 +33,13 @@
     - set_fact:
         public_ip: "{{ PUBLIC_IP }}"
       when: PUBLIC_IP is defined
+      tags: always
 
   roles:
     - {role: angstwad.docker_ubuntu, become: true, tags: docker}
 
   post_tasks:
     - set_fact:
-        tags: always
         env_vars: 
           OVPN_DATA: "{{ OVPN_DATA }}"
         vols:
@@ -49,15 +50,21 @@
         server_target: "{{ public_ip }}"
         docker_name: openvpn
         client_name: mbp1
+        docker_privileged: no
+        extra_config: ''
+      tags: always
 
     - set_fact:
         vols:
           - "{{ OVPN_DIR }}:/etc/openvpn"
         docker_name: openvpn0
         client_name: mbp2
+        docker_privileged: yes
         docker_ports:
-          - 1195:1194/udp
+          - 1195:1194/udp 
+        extra_config: "-r 172.16.254.0/24"
       when: ALTERNATIVE is defined
+      tags: always
 
     - name: pull kylemanna/openvpn
       become: true
@@ -78,7 +85,7 @@
         image: kylemanna/openvpn
         env: "{{ env_vars }}"
         volumes: "{{ vols }}"
-        command: "ovpn_genconfig -u udp://{{ server_target }}"
+        command: "ovpn_genconfig -u udp://{{ server_target }} {{ extra_config }}"
 
 
     - pause:
@@ -119,6 +126,7 @@ sudo docker run -v {{ vols[0] }} --rm -it kylemanna/openvpn ovpn_initpki\n
           volumes: "{{ vols }}"
           capabilities: "{{ docker_caps }}"
           published_ports: "{{ docker_ports }}"
+          privileged: yes
       tags: start
 
 
