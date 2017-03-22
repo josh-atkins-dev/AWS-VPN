@@ -32,6 +32,9 @@
           OVPN_DATA: "{{ OVPN_DATA }}"
         vols:
           - "{{ OVPN_DATA }}:/etc/openvpn"
+        docker_ports:
+          - 1194:1194/udp
+        docker_caps: NET_ADMIN
 
     - name: pull kylemanna/openvpn
       become: true
@@ -63,4 +66,23 @@ sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_
         "
 
 
+
+    - block:
+      - name: Remove previous openvpn container
+        become: true
+        docker_container:
+          name: openvpn
+          image: kylemanna/openvpn
+          state: absent
+
+      - name: Start openvpn
+        become: true
+        docker_container:
+          name: openvpn
+          image: kylemanna/openvpn
+          env: "{{ env_vars }}"
+          volumes: "{{ vols }}"
+          capabilities: "{{ docker_caps }}"
+          published_ports: "{{ docker_ports }}"
+      tags: start
 
