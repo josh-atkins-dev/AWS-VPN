@@ -6,6 +6,16 @@ The following are present:
 
 - ansible
 
+## Workflow
+
+1. Docker is present on VPN instance
+2. Pull image kylemanna/openvpn
+3. Generate openvpn config (`ovpn_genconfig`)
+4. Generate certificates (`ovpn_initpki`)
+5. Start openvpn
+6. Retrieve client configuration (`ovpn_getclient`)
+7. Copy client configuration to client
+
 
 ## Getting Started
 
