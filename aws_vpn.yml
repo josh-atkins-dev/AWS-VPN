@@ -49,3 +49,18 @@
         env: "{{ env_vars }}"
         volumes: "{{ vols }}"
         command: "ovpn_genconfig -u udp://{{ public_ip }}"
+
+
+    - pause:
+        prompt: "
+#   Now log into the VPN instance, e.g.:\n
+ssh -v -i {{ lookup('env','VM_TEMP_PATH') }}/ssh/{{ lookup('env','AWS_PREFIX') }}-key.pem ubuntu@{{ public_ip }}\n
+\n
+#   and generate certificates using ovpn_initpki, e.g.:\n
+sudo docker run -v {{ OVPN_DATA }}:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki\n
+\n
+#   Press enter to continue
+        "
+
+
+
