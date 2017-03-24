@@ -24,7 +24,7 @@ The following are present:
 > ./init.sh
 > vpn_is_present
 # Log in to instance
-# > docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki nopass
+# > docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki
 # > docker run -v openvpn_data:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn
 # > docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full CLIENTNAME nopass
 # > docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient CLIENTNAME > CLIENTNAME.ovpn
@@ -39,17 +39,12 @@ See more details: https://hub.docker.com/r/kylemanna/openvpn/
 https://github.com/kylemanna/docker-openvpn/blob/a17dfd7808ec232232265c9f394f090806e2e830/docs/advanced.md
 
 ```
-# SCP Custom config to instance
-> scp -i /vagrant/tmp/ssh/170320-key.pem openvpn.conf ubuntu@35.157.151.5:/home/ubuntu/openvpn.conf
 # Log in to instance
-mkdir openvpn0
-cd openvpn0
-docker run --rm -v $PWD:/etc/openvpn kylemanna/openvpn ovpn_genconfig -u udp://35.157.151.5:1195
-cp ../openvpn.conf ./
-docker run --rm -v $PWD:/etc/openvpn -it kylemanna/openvpn ovpn_initpki nopass
-docker run --rm -v $PWD:/etc/openvpn -it kylemanna/openvpn easyrsa build-client-full CLIENTNAME nopass
-docker run --rm -v $PWD:/etc/openvpn kylemanna/openvpn ovpn_getclient CLIENTNAME > CLIENTNAME.ovpn
-docker run -v $PWD:/etc/openvpn -d -p 1195:1194/udp --privileged kylemanna/openvpn
-
-
+# > docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki
+# > docker run -v openvpn_data:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn
+# > docker run -v openvpn_data:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full CLIENTNAME nopass
+# > docker run -v openvpn_data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient CLIENTNAME > CLIENTNAME.ovpn
+# Exit the instance
+# User SCP to get ovpn profile, e.g.:
+> scp -i /vagrant/tmp/ssh/170320-key.pem ubuntu@35.157.151.5:/home/ubuntu/mbp.ovpn /vagrant/tmp/mbp.ovpn
 ```
