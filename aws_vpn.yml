@@ -19,16 +19,21 @@
       when: ALTERNATIVE is defined
       tags: always
 
+
     - block:
+
       - name: Get VPC public IP
         uri:
           url: http://ipecho.net/plain
           return_content: yes
         register: ip_facts
         tags: always
+
       - set_fact:
           public_ip: "{{ ip_facts.content }}"
+
       when: PUBLIC_IP is undefined
+      tags: always
 
     - set_fact:
         public_ip: "{{ PUBLIC_IP }}"
@@ -62,7 +67,8 @@
         docker_privileged: yes
         docker_ports:
           - 1195:1194/udp 
-        extra_config: "-r 172.16.254.0/24"
+        extra_config: "-s 172.16.250.1/24 -r 172.16.249.0/24"
+        server_target: "{{ public_ip }}:1195"
       when: ALTERNATIVE is defined
       tags: always
 
@@ -71,10 +77,6 @@
       tags: pull
       docker_image:
         name: kylemanna/openvpn
-
-    - set_fact:
-        server_target: "{{ public_ip }}:1195"
-      when: ALTERNATIVE is defined
 
 
     - name: Generate openvpn config
@@ -106,6 +108,8 @@ sudo docker run -v {{ vols[0] }} --rm -it kylemanna/openvpn ovpn_initpki\n
         group: ubuntu
         mode: 0644
       when: ALTERNATIVE is defined
+      tags:
+        - copy
 
 
 
