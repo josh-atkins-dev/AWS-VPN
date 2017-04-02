@@ -50,7 +50,7 @@
         vols:
           - "{{ OVPN_DATA }}:/etc/openvpn"
         docker_ports:
-          - 1194:1194/udp
+          - 443:1194/tcp
         docker_caps: NET_ADMIN
         server_target: "{{ public_ip }}"
         docker_name: openvpn
@@ -87,7 +87,7 @@
         image: kylemanna/openvpn
         env: "{{ env_vars }}"
         volumes: "{{ vols }}"
-        command: "ovpn_genconfig -u udp://{{ server_target }} {{ extra_config }}"
+        command: "ovpn_genconfig -u tcp://{{ server_target }}:443 {{ extra_config }}"
 
 
     - pause:
@@ -155,6 +155,8 @@ sudo docker run -v {{ vols[0] }} --rm kylemanna/openvpn ovpn_getclient {{ client
         flat: yes
         src: "/home/ubuntu/{{ client_name }}.ovpn"
         dest: "{{ lookup('env','VM_TEMP_PATH') }}/"
+    - pause:
+        prompt: "REMOVE VPN SSH RULE!!!"
 
 
 
